@@ -1,6 +1,6 @@
 ## Scaffolding project
 
-To one-shot the project folder structure with our modular monolith vertical slice design, we do:
+Project structure is intiialized with the following one-shot command:
 
 ```bash
 mkdir -p alembic/versions \
@@ -89,38 +89,9 @@ EOF
 
 TODO: This script over-wrote my pyproject.toml file, which it shouldn't have done... fix it
 
-## Init FastAPI backend
+## FastAPI Dev
 
-To init the FastAPI backend and configure it we do:
-
-```bash
-# Initialize the project (this will update pyproject.toml)
-uv init
-
-# Add FastAPI (with standard ASGI server tools), Pydantic for validation, and Pydantic-Settings for config
-uv add "fastapi[standard]" pydantic pydantic-settings
-```
-
-Then we create some dummy code in our main.py function:
-
-```python
-from fastapi import FastAPI
-
-app = FastAPI()
-
-
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
-```
-
-And we run the application with:
-
-```bash
-uv run fastapi dev src/main.py
-```
-
-Now, because we don't want to specify this entry point every single time, we can confdigure the app entrypoint as stated in the [docs](https://fastapi.tiangolo.com/tutorial/first-steps/#configure-the-app-entrypoint-in-pyproject-toml):
+Our FastAPI entrypoint is specified in pyproject.toml, according to the official [docs](https://fastapi.tiangolo.com/tutorial/first-steps/#configure-the-app-entrypoint-in-pyproject-toml):
 
 ```python
 # pyproject.toml
@@ -129,4 +100,20 @@ Now, because we don't want to specify this entry point every single time, we can
 entrypoint = "src.main:app"
 ```
 
-Alternatively, we can create a makefile to simplify this process
+Additionally, to simplify development, we are serving it with a Makefile, making it trivial to run the app with `make dev`
+
+```
+.PHONY: dev test lint format
+
+dev:
+	uv run fastapi dev
+
+test:
+	uv run pytest
+
+lint:
+	uv run ruff check .
+
+format:
+	uv run ruff format .
+```

@@ -1,8 +1,6 @@
 from fastapi import FastAPI
+from src.api.v1.router import api_v1_router
 
-app = FastAPI()
+app = FastAPI(title="Modular FastAPI Monolith")
 
-
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
+app.include_router(api_v1_router, prefix="/api/v1")
