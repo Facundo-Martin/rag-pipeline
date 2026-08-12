@@ -1,9 +1,12 @@
-
-from functools import lru_cache
+# src/config.py
 
 from enum import Enum
-from pydantic import Field, SecretStr
+from functools import lru_cache
+from typing import Self
+
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Environment(str, Enum):
     """
@@ -13,6 +16,7 @@ class Environment(str, Enum):
     DEVELOPMENT = "development"
     STAGING = "staging"
     PRODUCTION = "production"
+
 
 class Settings(BaseSettings):
     """
@@ -27,7 +31,7 @@ class Settings(BaseSettings):
     )
     debug: bool = Field(
         default=False,
-        description="Enable debug mode for verbose error logging.",
+        description="Enable debug mode for verbose error logging and API docs.",
     )
     environment: Environment = Field(
         default=Environment.DEVELOPMENT,
@@ -77,6 +81,15 @@ class Settings(BaseSettings):
         env_ignore_empty=True,
         extra="ignore",
     )
+
+    @model_validator(mode="after")
+    def set_debug_default(self) -> Self:
+        """
+        Default debug to True for non-production environments unless explicitly set.
+        """
+        if "debug" not in self.model_fields_set:
+            self.debug = self.environment != Environment.PRODUCTION
+        return self
 
 
 @lru_cache
