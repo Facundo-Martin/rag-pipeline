@@ -100,3 +100,33 @@ uv init
 # Add FastAPI (with standard ASGI server tools), Pydantic for validation, and Pydantic-Settings for config
 uv add "fastapi[standard]" pydantic pydantic-settings
 ```
+
+Then we create some dummy code in our main.py function:
+
+```python
+from fastapi import FastAPI
+
+app = FastAPI()
+
+
+@app.get("/")
+async def root():
+    return {"message": "Hello World"}
+```
+
+And we run the application with:
+
+```bash
+uv run fastapi dev src/main.py
+```
+
+Now, because we don't want to specify this entry point every single time, we can confdigure the app entrypoint as stated in the [docs](https://fastapi.tiangolo.com/tutorial/first-steps/#configure-the-app-entrypoint-in-pyproject-toml):
+
+```python
+# pyproject.toml
+
+[tool.fastapi]
+entrypoint = "src.main:app"
+```
+
+Alternatively, we can create a makefile to simplify this process
