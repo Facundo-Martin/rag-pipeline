@@ -1,0 +1,91 @@
+
+from functools import lru_cache
+
+from enum import Enum
+from pydantic import Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+class Environment(str, Enum):
+    """
+    Runtime environment options.
+    """
+
+    DEVELOPMENT = "development"
+    STAGING = "staging"
+    PRODUCTION = "production"
+
+class Settings(BaseSettings):
+    """
+    Application settings loaded from environment variables.
+    Use .env file for local development.
+    """
+
+    # Application settings
+    app_name: str = Field(
+        default="Modular FastAPI Backend",
+        description="Display name of the application in API documentation.",
+    )
+    debug: bool = Field(
+        default=False,
+        description="Enable debug mode for verbose error logging.",
+    )
+    environment: Environment = Field(
+        default=Environment.DEVELOPMENT,
+        description="Runtime environment mode.",
+    )
+    api_v1_prefix: str = Field(
+        default="/api/v1",
+        description="Global route prefix for V1 endpoints.",
+    )
+
+    # Server settings
+    host: str = Field(
+        default="0.0.0.0",
+        description="Host address to bind the server.",
+    )
+    port: int = Field(
+        default=8000,
+        description="Port number to bind the server.",
+    )
+    workers: int = Field(
+        default=4,
+        ge=1,
+        le=32,
+        description="Number of worker processes for production ASGI deployments.",
+    )
+
+    # TODO: Add relational DB settings
+    # TODO: Add vector DB settings
+
+    # Security settings
+    secret_key: SecretStr = Field(
+        default=SecretStr("insecure-dev-secret-key-change-me-in-production-32-chars"),
+        min_length=32,
+        description="Secret key for JWT generation and cryptographic operations.",
+    )
+
+    # CORS settings
+    allowed_origins: list[str] = Field(
+        default=["http://localhost:3000", "http://localhost:8000"],
+        description="Allowed origins for cross-origin resource sharing.",
+    )
+
+    # Load from .env file if present and ignore extra local variables.
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_ignore_empty=True,
+        extra="ignore",
+    )
+
+
+@lru_cache
+def get_settings() -> Settings:
+    """
+    Returns cached settings instance.
+    Using lru_cache ensures settings are loaded once.
+    """
+    return Settings()
+
+
+settings = get_settings()
