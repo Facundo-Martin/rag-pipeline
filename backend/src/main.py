@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import get_settings
 from src.api.v1.router import api_v1_router
+from src.core.exceptions import register_exception_handlers
 
 
 @asynccontextmanager
@@ -53,7 +54,8 @@ def create_application() -> FastAPI:
 
     # TODO: Add custom middleware
 
-    # TODO: Setup exception handlers
+    # Setup exception handlers
+    register_exception_handlers(application)
 
     # Include API routers
     application.include_router(
