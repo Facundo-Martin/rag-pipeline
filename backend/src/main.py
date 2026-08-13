@@ -2,11 +2,16 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import structlog
 
 from src.config import get_settings
 from src.api.v1.router import api_v1_router
+
+from src.core.logging import setup_logging
+from src.core.middleware import register_middleware
 from src.core.exceptions import register_exception_handlers
 
+logger = structlog.get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI): # Note: We need to type _app as FastAPI so that it doesn't throw
@@ -18,12 +23,16 @@ async def lifespan(_app: FastAPI): # Note: We need to type _app as FastAPI so th
     settings = get_settings()
     # TODO: Add db here
 
-    print(f"Starting up {settings.app_name} [{settings.environment}]...")
-    
+    logger.info(
+        "Starting up application",
+        app_name=settings.app_name,
+        environment=settings.environment,
+    )
+       
     yield  # Application runs here
 
     # Shutdown: Clean up resources
-    print(f"Shutting down {settings.app_name}...")
+    logger.info("Shutting down application", app_name=settings.app_name)
 
 def create_application() -> FastAPI:
     """
@@ -32,7 +41,10 @@ def create_application() -> FastAPI:
     """
     settings = get_settings()
 
-    # Create FastAPI instance with metadata
+    # 1. Setup logging configuration first
+    setup_logging(settings)
+
+    # 2. Instantiate FastAPI
     application = FastAPI(
         title=settings.app_name,
         description="Production-ready FastAPI application",
@@ -43,7 +55,7 @@ def create_application() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # Add CORS middleware
+    # 3. Add CORS middleware
     application.add_middleware(
         CORSMiddleware,
         allow_origins=settings.allowed_origins,
@@ -52,15 +64,17 @@ def create_application() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # TODO: Add custom middleware
+    # 4. Register custom middleware
+    register_middleware(application)
 
-    # Setup exception handlers
+    # 5. Register exception handlers
     register_exception_handlers(application)
 
-    # Include API routers
+
+    # 6. Include API routers
     application.include_router(
         api_v1_router,
-        prefix="/api/v1",
+        prefix=settings.api_v1_prefix,
     )
 
     return application
