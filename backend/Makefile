@@ -1,8 +1,12 @@
-.PHONY: dev down build test logs clean
+.PHONY: dev lint-docker down build test logs clean
 
 # Start all containers in development mode
 dev:
 	docker compose up --build
+
+# Lint Dockerfiles using official Hadolint container (no local installation needed)
+lint-docker:
+	docker run --rm -v "$(shell pwd):/work" -w /work hadolint/hadolint hadolint docker/Dockerfile.dev docker/Dockerfile
 
 test:
 	uv run pytest -v
