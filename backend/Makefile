@@ -2,17 +2,17 @@
 
 # Start all containers in development mode
 dev:
-	docker compose up --build
+	docker compose -f docker/docker-compose.yml up --build
 
 # Start containers in background (detached)
 dev-d:
-	docker compose up -d
+	docker compose -f docker/docker-compose.yml up -d
 
 # Rebuild dev containers from scratch
 build:
-	docker compose up --build
+	docker compose -f docker/docker-compose.yml up --build
 
-# Build production Docker image locally (Check with docker images | grep backend-app)
+# Build production Docker image locally
 build-prod:
 	docker build -f docker/Dockerfile -t backend-app:prod .
 
@@ -31,11 +31,11 @@ format:
 
 # Stop all running containers
 down:
-	docker compose down
+	docker compose -f docker/docker-compose.yml down
 
 # View container logs
 logs:
-	docker compose logs -f app
+	docker compose -f docker/docker-compose.yml logs -f app
 
 # Clean up temp files and caches
 clean:

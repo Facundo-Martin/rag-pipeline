@@ -117,3 +117,7 @@ lint:
 format:
 	uv run ruff format .
 ```
+
+## Docker development
+
+Makefile was updated. Running make dev now spins up docker container for development
