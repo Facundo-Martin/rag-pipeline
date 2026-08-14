@@ -1,8 +1,20 @@
-.PHONY: dev lint-docker down build test logs clean
+.PHONY: dev dev-d down build build-prod test lint format lint-docker logs clean
 
 # Start all containers in development mode
 dev:
 	docker compose up --build
+
+# Start containers in background (detached)
+dev-d:
+	docker compose up -d
+
+# Rebuild dev containers from scratch
+build:
+	docker compose up --build
+
+# Build production Docker image locally (Check with docker images | grep backend-app)
+build-prod:
+	docker build -f docker/Dockerfile -t backend-app:prod .
 
 # Lint Dockerfiles using official Hadolint container (no local installation needed)
 lint-docker:
@@ -17,24 +29,13 @@ lint:
 format:
 	uv run ruff format .
 
-# Start containers in background (detached)
-dev-d:
-	docker compose up -d
-
 # Stop all running containers
 down:
 	docker compose down
 
-# Rebuild containers from scratch
-build:
-	docker compose up --build
-
 # View container logs
 logs:
 	docker compose logs -f app
-
-# Run pytest inside local environment
-
 
 # Clean up temp files and caches
 clean:
