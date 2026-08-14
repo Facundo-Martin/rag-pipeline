@@ -1,13 +1,38 @@
-.PHONY: dev test lint format
+.PHONY: dev down build test logs clean
 
+# Start all containers in development mode
 dev:
-	uv run fastapi dev
+	docker compose up --build
 
 test:
-	uv run pytest
+	uv run pytest -v
 
 lint:
 	uv run ruff check .
 
 format:
 	uv run ruff format .
+
+# Start containers in background (detached)
+dev-d:
+	docker compose up -d
+
+# Stop all running containers
+down:
+	docker compose down
+
+# Rebuild containers from scratch
+build:
+	docker compose up --build
+
+# View container logs
+logs:
+	docker compose logs -f app
+
+# Run pytest inside local environment
+
+
+# Clean up temp files and caches
+clean:
+	find . -type d -name "__pycache__" -exec rm -rf {} +
+	find . -type d -name ".pytest_cache" -exec rm -rf {} +
