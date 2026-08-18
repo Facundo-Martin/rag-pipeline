@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 from src.api.v1.health import health_router
 
 api_v1_router = APIRouter()

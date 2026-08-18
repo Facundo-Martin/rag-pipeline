@@ -1,20 +1,22 @@
 from contextlib import asynccontextmanager
 
+import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import structlog
 
-from src.config import get_settings
 from src.api.v1.router import api_v1_router
-
+from src.config import get_settings
+from src.core.exceptions import register_exception_handlers
 from src.core.logging import setup_logging
 from src.core.middleware import register_middleware
-from src.core.exceptions import register_exception_handlers
 
 logger = structlog.get_logger(__name__)
 
+
 @asynccontextmanager
-async def lifespan(_app: FastAPI): # Note: We need to type _app as FastAPI so that it doesn't throw
+async def lifespan(
+    _app: FastAPI,
+):  # Note: We need to type _app as FastAPI so that it doesn't throw
     """
     Lifespan context manager handles startup and shutdown events.
     This is the modern way to handle application lifecycle in FastAPI.
@@ -28,11 +30,12 @@ async def lifespan(_app: FastAPI): # Note: We need to type _app as FastAPI so th
         app_name=settings.app_name,
         environment=settings.environment,
     )
-       
+
     yield  # Application runs here
 
     # Shutdown: Clean up resources
     logger.info("Shutting down application", app_name=settings.app_name)
+
 
 def create_application() -> FastAPI:
     """
@@ -69,7 +72,6 @@ def create_application() -> FastAPI:
 
     # 5. Register exception handlers
     register_exception_handlers(application)
-
 
     # 6. Include API routers
     application.include_router(

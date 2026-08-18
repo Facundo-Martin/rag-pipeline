@@ -132,9 +132,7 @@ async def validation_exception_handler(
     )
 
 
-async def unhandled_exception_handler(
-    request: Request, exc: Exception
-) -> JSONResponse:
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """
     Catch-all handler for unhandled internal exceptions.
     Logs the full traceback for debugging without exposing internal details to the client.

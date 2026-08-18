@@ -14,7 +14,7 @@ from src.core.exceptions import (
 @pytest.fixture
 def test_app() -> FastAPI:
     """
-    Creates a lightweight FastAPI app with dummy endpoints 
+    Creates a lightweight FastAPI app with dummy endpoints
     to test custom exception handling logic in isolation.
     """
     app = FastAPI()
