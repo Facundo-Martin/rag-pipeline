@@ -16,6 +16,21 @@ build:
 build-prod:
 	docker build -f docker/Dockerfile -t backend-app:prod .
 
+# Test production image locally with running infrastructure
+test-prod:
+	@echo "Starting infrastructure in background..."
+	docker compose -f docker/docker-compose.yml up -d db redis qdrant
+	@echo "Running production container..."
+	docker run --rm -it \
+		--network docker_default \
+		-p 8000:8000 \
+		-e ENVIRONMENT=production \
+		-e DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/app_db \
+		-e REDIS_URL=redis://redis:6379/0 \
+		-e QDRANT_HOST=qdrant \
+		-e QDRANT_PORT=6333 \
+		backend-app:prod
+
 # Lint Dockerfiles using official Hadolint container (no local installation needed)
 lint-docker:
 	docker run --rm -v "$(shell pwd):/work" -w /work hadolint/hadolint hadolint docker/Dockerfile.dev docker/Dockerfile

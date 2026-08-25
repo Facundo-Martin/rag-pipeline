@@ -13,7 +13,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# First, install dependencies only (caches this layer if requirements don't change)
+# First, install dependencies only
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
@@ -27,7 +27,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # ==========================================
 # Final Stage
 # ==========================================
-FROM python:3.12-slim-bookworm
+FROM python:3.14-slim-bookworm
 
 ENV PYTHONUNBUFFERED=1 \
     PATH="/app/.venv/bin:$PATH"
@@ -45,5 +45,5 @@ USER appuser
 
 EXPOSE 8000
 
-# Notice how clean this is now because of the PATH environment variable!
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run with Gunicorn managing Uvicorn workers
+CMD ["gunicorn", "src.main:app", "-c", "gunicorn_conf.py"]
