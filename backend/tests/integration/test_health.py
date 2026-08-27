@@ -14,6 +14,16 @@ def test_health_check_returns_healthy():
     assert response.status_code == 200
     assert response.json() == {"status": "healthy"}
 
+def test_readiness_probe_returns_ready():
+    """Verify readiness endpoint returns 200 OK and connected status."""
+    # We use the 'with' statement here specifically to trigger the 
+    # FastAPI lifespan, which calls init_db() and close_db()
+    with TestClient(app) as live_client:
+        response = live_client.get("/api/v1/ready")
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "ready", "database": "connected"}
+
 
 def test_middleware_attaches_headers():
     """Verify custom middleware generates process time and request ID headers."""
@@ -34,3 +44,4 @@ def test_middleware_preserves_incoming_request_id():
 
     assert response.status_code == 200
     assert response.headers["X-Request-ID"] == custom_request_id
+
