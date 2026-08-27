@@ -121,3 +121,7 @@ format:
 ## Docker development
 
 Makefile was updated. Running make dev now spins up docker container for development
+
+## Health and db test
+
+Run make dev and then run either curl -s http://localhost:8000/api/v1/ready or make test, since the db readiness probe has been added to the integration tests
