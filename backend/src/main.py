@@ -9,8 +9,7 @@ from src.config import get_settings
 from src.core.exceptions import register_exception_handlers
 from src.core.logging import setup_logging
 from src.core.middleware import register_middleware
-
-from src.infrastructure.postgres.session import init_db, close_db
+from src.infrastructure.postgres.session import close_db, init_db
 
 logger = structlog.get_logger(__name__)
 

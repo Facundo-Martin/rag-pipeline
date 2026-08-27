@@ -16,6 +16,7 @@ from src.config import get_settings
 # SQLAlchemy base class for models
 Base = declarative_base()
 
+
 @dataclass
 class _DatabaseState:
     """Hold the database resources shared by the application process."""
@@ -41,7 +42,7 @@ async def init_db(database_url: str) -> None:
         pool_size=settings.db_pool_size,
         max_overflow=settings.db_max_overflow,
         pool_pre_ping=True,  # Verify connections before use
-        pool_recycle=3600,   # Recycle connections after 1 hour
+        pool_recycle=3600,  # Recycle connections after 1 hour
     )
 
     # Create session factory
@@ -58,7 +59,7 @@ async def close_db() -> None:
     Close database connections.
     Call this during application shutdown.
     """
-    if _DATABASE_STATE.engine: 
+    if _DATABASE_STATE.engine:
         await _DATABASE_STATE.engine.dispose()
 
 
