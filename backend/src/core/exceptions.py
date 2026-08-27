@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Any, cast
 
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -93,10 +93,13 @@ class NotFoundException(AppException):
         )
 
 
-async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
+async def app_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """
     Handler for structured application exceptions.
     """
+    # Tell Mypy to treat this as an AppException
+    exc = cast(AppException, exc)
+
     logger.warning(
         "Domain exception occurred: path=%s status=%d message='%s'",
         request.url.path,
@@ -114,12 +117,13 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
     )
 
 
-async def validation_exception_handler(
-    request: Request, exc: RequestValidationError
-) -> JSONResponse:
+async def validation_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """
     Handler for Pydantic request validation errors.
     """
+    # Tell Mypy to treat this as a RequestValidationError
+    exc = cast(RequestValidationError, exc)
+
     logger.info("Validation error on path=%s: %s", request.url.path, exc.errors())
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

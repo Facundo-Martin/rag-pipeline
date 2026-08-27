@@ -13,11 +13,11 @@ worker_class = "uvicorn.workers.UvicornWorker"
 
 # Timeout for worker processes (seconds)
 # Increase if you have slow endpoints
-timeout = int(os.getenv("TIMEOUT", 120))
+timeout = int(os.getenv("TIMEOUT", "120"))
 
 # Restart workers after this many requests to prevent memory leaks
-max_requests = int(os.getenv("MAX_REQUESTS", 1000))
-max_requests_jitter = int(os.getenv("MAX_REQUESTS_JITTER", 50))
+max_requests = int(os.getenv("MAX_REQUESTS", "1000"))
+max_requests_jitter = int(os.getenv("MAX_REQUESTS_JITTER", "50"))
 
 # Graceful timeout - time to finish current requests before force kill
 graceful_timeout = 30
@@ -27,7 +27,7 @@ keepalive = 5
 
 # Logging configuration
 accesslog = "-"  # Log to stdout
-errorlog = "-"   # Log to stderr
+errorlog = "-"  # Log to stderr
 loglevel = os.getenv("LOG_LEVEL", "info")
 
 # Process naming for easier identification in ps/htop

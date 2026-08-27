@@ -3,6 +3,8 @@ import sys
 from typing import Any
 
 import structlog
+from structlog.dev import ConsoleRenderer
+from structlog.processors import JSONRenderer
 
 from src.config import Environment, Settings
 
@@ -25,6 +27,8 @@ def setup_logging(settings: Settings) -> None:
     ]
 
     # Use pretty console printing in dev, JSON in prod/staging
+    renderer: ConsoleRenderer | JSONRenderer
+
     if settings.environment == Environment.DEVELOPMENT:
         renderer = structlog.dev.ConsoleRenderer(colors=True)
     else:

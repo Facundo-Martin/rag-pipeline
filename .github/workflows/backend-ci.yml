@@ -3,13 +3,36 @@ name: Backend CI
 on:
   push:
     branches: ["main"]
+    paths:
+      - "backend/**" # Only trigger if files in the backend folder change
   pull_request:
     branches: ["main"]
+    paths:
+      - "backend/**"
 
 jobs:
   code-quality:
     name: Lint & Test
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend # Set execution path for all steps in this job
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: app_db
+        ports:
+          - 5432:5432
+        # Adjusted to match your docker-compose healthcheck exactly
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -20,7 +43,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version-file: "pyproject.toml"
+          python-version-file: "backend/pyproject.toml" # Update path here too
 
       - name: Install dependencies
         run: uv sync --frozen
@@ -34,6 +57,9 @@ jobs:
   docker-checks:
     name: Docker Lint & Build
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -41,12 +67,12 @@ jobs:
       - name: Lint Dockerfiles (Hadolint)
         uses: hadolint/hadolint-action@v3.1.0
         with:
-          dockerfile: docker/Dockerfile
+          dockerfile: backend/docker/Dockerfile
 
       - name: Lint Dev Dockerfile (Hadolint)
         uses: hadolint/hadolint-action@v3.1.0
         with:
-          dockerfile: docker/Dockerfile.dev
+          dockerfile: backend/docker/Dockerfile.dev
 
       - name: Build Production Image
         run: docker build -f docker/Dockerfile -t backend-app:test .
