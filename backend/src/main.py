@@ -10,6 +10,8 @@ from src.core.exceptions import register_exception_handlers
 from src.core.logging import setup_logging
 from src.core.middleware import register_middleware
 
+from src.infrastructure.postgres.session import init_db, close_db
+
 logger = structlog.get_logger(__name__)
 
 
@@ -23,7 +25,7 @@ async def lifespan(
     """
     # Startup: Initialize resources
     settings = get_settings()
-    # TODO: Add db here
+    await init_db(settings.database_url)
 
     logger.info(
         "Starting up application",
@@ -34,6 +36,7 @@ async def lifespan(
     yield  # Application runs here
 
     # Shutdown: Clean up resources
+    await close_db()
     logger.info("Shutting down application", app_name=settings.app_name)
 
 
