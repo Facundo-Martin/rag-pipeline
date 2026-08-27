@@ -1,5 +1,3 @@
-# src/config.py
-
 from enum import Enum
 from functools import lru_cache
 from typing import Self
@@ -58,8 +56,19 @@ class Settings(BaseSettings):
         description="Number of worker processes for production ASGI deployments.",
     )
 
-    # TODO: Add relational DB settings
-    # TODO: Add vector DB settings
+    # Database settings
+    database_url: str = Field(
+        default="postgresql+asyncpg://postgres:postgres@localhost:5432/app_db",
+        description="Async SQLAlchemy connection URL for the PostgreSQL database.",
+    )
+    db_pool_size: int = Field(
+        default=10,
+        description="Number of database connections maintained in the pool.",
+    )
+    db_max_overflow: int = Field(
+        default=20,
+        description="Maximum temporary database connections allowed beyond the pool size.",
+    )
 
     # Security settings
     secret_key: SecretStr = Field(
