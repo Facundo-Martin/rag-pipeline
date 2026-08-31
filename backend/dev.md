@@ -125,3 +125,9 @@ Makefile was updated. Running make dev now spins up docker container for develop
 ## Health and db test
 
 Run make dev and then run either curl -s http://localhost:8000/api/v1/ready or make test, since the db readiness probe has been added to the integration tests
+
+## Data modeling
+
+Refer to "Inverting the Dependency: ORM Depends on Model" section in Chapter 2 of Architecture patterns with Python. However, implementation is done following https://docs.sqlalchemy.org/en/20/orm/mapping_styles.html#declarative-mapping, since SQLAlchemy itself recommends it:
+
+> The imperative mapping form is a lesser-used form of mapping that originates from the very first releases of SQLAlchemy in 2006. It’s essentially a means of bypassing the Declarative system to provide a more “barebones” system of mapping, and does not offer modern features such as PEP 484 support. As such, most documentation examples use Declarative forms, and it’s recommended that new users start with Declarative Table configuration.

@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "alembic>=1.19.1",
     "asyncpg>=0.31.0",
     "fastapi[standard]>=0.141.1",
     "gunicorn>=26.2.0",
@@ -28,3 +29,6 @@ dev = [
     "pytest>=9.1.1",
     "ruff>=0.16.3",
 ]
+
+[tool.pylint."typecheck"]
+ignored-classes = ["sqlalchemy.sql.functions.func", "sqlalchemy.sql.functions._FunctionGenerator"]
