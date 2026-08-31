@@ -9,12 +9,8 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.orm import declarative_base
 
 from src.config import get_settings
-
-# SQLAlchemy base class for models
-Base = declarative_base()
 
 
 @dataclass
