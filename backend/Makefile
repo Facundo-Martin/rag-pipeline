@@ -1,4 +1,4 @@
-.PHONY: dev dev-d down build build-prod test lint format lint-docker logs clean
+.PHONY: dev dev-d down db-migrate db-upgrade build build-prod test lint format lint-docker logs clean
 
 # Start all containers in development mode
 dev:
@@ -7,6 +7,18 @@ dev:
 # Start containers in background (detached)
 dev-d:
 	docker compose -f docker/docker-compose.yml up -d
+
+# Stop all running containers
+down:
+	docker compose -f docker/docker-compose.yml down
+
+# Generate a new migration script (Usage: make db-migrate msg="added users table")
+db-migrate:
+	uv run alembic -c pyproject.toml revision --autogenerate -m "$(msg)"
+
+# Apply all pending migrations to the database
+db-upgrade:
+	uv run alembic -c pyproject.toml upgrade head
 
 # Rebuild dev containers from scratch
 build:
@@ -45,9 +57,7 @@ format:
 	uv run ruff check --fix .
 	uv run ruff format .
 
-# Stop all running containers
-down:
-	docker compose -f docker/docker-compose.yml down
+
 
 # View container logs
 logs:
