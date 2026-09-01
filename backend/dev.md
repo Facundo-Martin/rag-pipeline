@@ -126,8 +126,42 @@ Makefile was updated. Running make dev now spins up docker container for develop
 
 Run make dev and then run either curl -s http://localhost:8000/api/v1/ready or make test, since the db readiness probe has been added to the integration tests
 
-## Data modeling
+## Data modeling & migrations (later separate into just DB Modeling and DB Migrations)
 
 Refer to "Inverting the Dependency: ORM Depends on Model" section in Chapter 2 of Architecture patterns with Python. However, implementation is done following https://docs.sqlalchemy.org/en/20/orm/mapping_styles.html#declarative-mapping, since SQLAlchemy itself recommends it:
 
 > The imperative mapping form is a lesser-used form of mapping that originates from the very first releases of SQLAlchemy in 2006. It’s essentially a means of bypassing the Declarative system to provide a more “barebones” system of mapping, and does not offer modern features such as PEP 484 support. As such, most documentation examples use Declarative forms, and it’s recommended that new users start with Declarative Table configuration.
+
+To push to DB, refer to the makefile
+
+```
+# Generate a new migration script (Usage: make db-migrate msg="added users table")
+db-migrate:
+	uv run alembic -c pyproject.toml revision --autogenerate -m "$(msg)"
+
+# Apply all pending migrations to the database
+db-upgrade:
+	uv run alembic -c pyproject.toml upgrade head
+```
+
+### DB
+
+To verify database tables, you can either use Docker or a Postgres GUI
+
+Docker exec:
+
+```
+docker exec -it <container_name> psql -U <your_postgres_user> -d <your_db_name>
+```
+
+You can find the container name by running `docker ps` and the remaining data in the docker-compose.yml file. The final command is:
+
+```
+docker exec -it docker-db-1 psql -U postgres -d app_db
+```
+
+#### Running on GUI
+
+Based on your docker-compose.yml, your database is exposed perfectly to your host machine on port 5432.
+
+If your GUI tool asks for a Connection URL, you can just paste this exact string: postgresql://postgres:postgres@localhost:5432/app_db
