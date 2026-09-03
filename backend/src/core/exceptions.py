@@ -120,17 +120,31 @@ async def app_exception_handler(request: Request, exc: Exception) -> JSONRespons
 async def validation_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """
     Handler for Pydantic request validation errors.
+    Serializes errors in a clean, JSON-safe format.
     """
     # Tell Mypy to treat this as a RequestValidationError
     exc = cast(RequestValidationError, exc)
 
-    logger.info("Validation error on path=%s: %s", request.url.path, exc.errors())
+    errors = exc.errors()
+    logger.info("Validation error on path=%s: %s", request.url.path, errors)
+
+    # Clean up errors to ensure JSON serializability
+    # Remove context objects that can't be serialized
+    cleaned_errors = []
+    for error in errors:
+        clean_error = {
+            "type": error.get("type"),
+            "loc": error.get("loc"),
+            "msg": error.get("msg"),
+        }
+        cleaned_errors.append(clean_error)
+
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
             "error": {
                 "message": "Validation error",
-                "details": exc.errors(),
+                "details": cleaned_errors,
             }
         },
     )
