@@ -88,12 +88,13 @@ EOF
 ```
 
 TODO: This script over-wrote my pyproject.toml file, which it shouldn't have done... fix it
+TODO: Rm alembic folders, since these will be created with alembic init
 
 ## FastAPI Dev
 
 Our FastAPI entrypoint is specified in pyproject.toml, according to the official [docs](https://fastapi.tiangolo.com/tutorial/first-steps/#configure-the-app-entrypoint-in-pyproject-toml):
 
-```python
+```toml
 # pyproject.toml
 
 [tool.fastapi]
@@ -102,20 +103,20 @@ entrypoint = "src.main:app"
 
 Additionally, to simplify development, we are serving it with a Makefile, making it trivial to run the app with `make dev`
 
-```
+```makefile
 .PHONY: dev test lint format
 
 dev:
-	uv run fastapi dev
+      uv run fastapi dev
 
 test:
-	uv run pytest
+      uv run pytest
 
 lint:
-	uv run ruff check .
+      uv run ruff check .
 
 format:
-	uv run ruff format .
+      uv run ruff format .
 ```
 
 ## Docker development
@@ -134,14 +135,14 @@ Refer to "Inverting the Dependency: ORM Depends on Model" section in Chapter 2 o
 
 To push to DB, refer to the makefile
 
-```
+```makefile
 # Generate a new migration script (Usage: make db-migrate msg="added users table")
 db-migrate:
-	uv run alembic -c pyproject.toml revision --autogenerate -m "$(msg)"
+      uv run alembic -c pyproject.toml revision --autogenerate -m "$(msg)"
 
 # Apply all pending migrations to the database
 db-upgrade:
-	uv run alembic -c pyproject.toml upgrade head
+      uv run alembic -c pyproject.toml upgrade head
 ```
 
 ### DB
@@ -150,13 +151,13 @@ To verify database tables, you can either use Docker or a Postgres GUI
 
 Docker exec:
 
-```
+```bash
 docker exec -it <container_name> psql -U <your_postgres_user> -d <your_db_name>
 ```
 
 You can find the container name by running `docker ps` and the remaining data in the docker-compose.yml file. The final command is:
 
-```
+```bash
 docker exec -it docker-db-1 psql -U postgres -d app_db
 ```
 
@@ -164,4 +165,330 @@ docker exec -it docker-db-1 psql -U postgres -d app_db
 
 Based on your docker-compose.yml, your database is exposed perfectly to your host machine on port 5432.
 
-If your GUI tool asks for a Connection URL, you can just paste this exact string: postgresql://postgres:postgres@localhost:5432/app_db
+If your GUI tool asks for a Connection URL, you can just paste this exact string: `postgresql://postgres:postgres@localhost:5432/app_db`
+
+## DB Modeling Workflow
+
+We follow the **Dependency Inversion Principle** (inspired by _Architecture Patterns with Python_). High-level business rules must not depend on low-level infrastructure (like FastAPI or SQLAlchemy).
+
+When building a new domain feature (e.g., Users, Billing), build progressively from the database up to the HTTP boundary:
+
+### 1. ORM Models (Data Structure)
+
+Define the database schema using SQLAlchemy 2.0 Declarative mapping (as recommended by modern SQLAlchemy docs).
+
+```python
+# src/modules/users/models.py
+"""Database models for the user domain."""
+
+from datetime import datetime
+from uuid import UUID, uuid4
+
+from sqlalchemy import Boolean, DateTime, String, func
+from sqlalchemy.orm import Mapped, mapped_column
+
+from src.infrastructure.postgres.base import Base
+
+
+class User(Base):
+    """SQLAlchemy ORM model for the users table."""
+    # pylint: disable=too-few-public-methods
+
+    __tablename__ = "users"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    email: Mapped[str] = mapped_column(
+        String(255), unique=True, index=True, nullable=False
+    )
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    def __repr__(self) -> str:
+        return f"<User {self.email}>"
+```
+
+### 2. Repository Pattern (Data Access)
+
+Encapsulate all raw SQL and SQLAlchemy `AsyncSession` operations behind an explicit interface. The rest of the application interacts with the abstract contract, never with the database directly. This enforces strict contracts and makes dependency injection and unit testing predictable.
+
+```python
+# src/modules/users/repository.py
+"""Database repository for User entities."""
+
+from abc import ABC, abstractmethod
+from uuid import UUID
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.modules.users.models import User
+
+
+class AbstractUserRepository(ABC):
+    """
+    Abstract interface defining data access operations for the User domain.
+    Enforces a strict contract for any concrete repository implementation.
+    """
+
+    @abstractmethod
+    async def create(self, user: User) -> User:
+        """Saves a new user to the data store."""
+        pass
+
+    @abstractmethod
+    async def get_by_email(self, email: str) -> User | None:
+        """Retrieves a user by their email address."""
+        pass
+
+    @abstractmethod
+    async def get_by_id(self, user_id: UUID) -> User | None:
+        """Retrieves a user by their UUID."""
+        pass
+
+
+class PostgresUserRepository(AbstractUserRepository):
+    """
+    Concrete SQLAlchemy adapter connecting domain requests to PostgreSQL.
+    """
+
+    def __init__(self, session: AsyncSession) -> None:
+        """Initialize the repository with an async database session."""
+        self._session = session
+
+    async def create(self, user: User) -> User:
+        self._session.add(user)
+        await self._session.commit()
+        await self._session.refresh(user)
+        return user
+
+    async def get_by_email(self, email: str) -> User | None:
+        stmt = select(User).where(User.email == email)
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_by_id(self, user_id: UUID) -> User | None:
+        return await self._session.get(User, user_id)
+```
+
+### 3. Pydantic Schemas (DTOs)
+
+Define strict input/output validation models at the application boundary to sanitize data before it hits business logic.
+
+```python
+# src/modules/users/schemas.py
+from datetime import datetime
+from uuid import UUID
+from pydantic import BaseModel, ConfigDict, EmailStr
+
+
+class UserCreate(BaseModel):
+    """Incoming request payload."""
+    email: EmailStr
+    password: str
+
+
+class UserRead(BaseModel):
+    """Outgoing response payload."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    email: EmailStr
+    is_active: bool
+    created_at: datetime
+```
+
+### 4. Service Layer (Business Logic)
+
+Orchestrate domain rules (e.g., password hashing, uniqueness checks) and repository calls. This layer is completely isolated from HTTP requests and raw SQL.
+
+```python
+# src/modules/users/service.py
+"""Business use cases and domain workflow orchestration for Users."""
+
+from uuid import UUID
+
+from src.modules.users.models import User
+from src.modules.users.repository import AbstractUserRepository
+from src.modules.users.schemas import UserCreate
+
+
+class UserService:
+    """Orchestrates use cases for the User domain."""
+
+    def __init__(self, repo: AbstractUserRepository) -> None:
+        """Inject the abstract repository interface."""
+        self.repo = repo
+
+    async def register_user(self, data: UserCreate) -> User:
+        """Use Case: Register a new unique user."""
+        existing = await self.repo.get_by_email(data.email)
+        if existing:
+            raise ValueError("Email already registered")
+
+        # In production, hash using Argon2/bcrypt via pwd_context
+        user = User(
+            email=data.email,
+            hashed_password=f"hashed_{data.password}",
+        )
+        return await self.repo.create(user)
+
+    async def get_user(self, user_id: UUID) -> User | None:
+        """Use Case: Fetch a single user by primary key."""
+        return await self.repo.get_by_id(user_id)
+```
+
+### 5. Lean API Router (HTTP Boundary)
+
+Act strictly as a traffic controller. Parse incoming HTTP requests, inject the necessary services via FastAPI `Depends`, and return proper HTTP status codes.
+
+```python
+# src/modules/users/router.py
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from src.modules.users.schemas import UserCreate, UserRead
+from src.modules.users.service import UserService
+from src.modules.users.dependencies import get_user_service
+
+router = APIRouter(prefix="/users", tags=["Users"])
+
+
+@router.post("", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+async def create_user(
+    payload: UserCreate,
+    service: UserService = Depends(get_user_service),
+) -> UserRead:
+    """Register a new user."""
+    try:
+        user = await service.register_user(payload)
+        return UserRead.model_validate(user)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+        ) from exc
+
+
+@router.get("/{user_id}", response_model=UserRead)
+async def get_user(
+    user_id: UUID,
+    service: UserService = Depends(get_user_service),
+) -> UserRead:
+    """Fetch user by ID."""
+    user = await service.get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return UserRead.model_validate(user)
+```
+
+### Dependency Injection Wiring (dependencies.py)
+
+To wire the abstract contract into FastAPI's dependency injection container, the dependency provider instantiates the concrete PostgresUserRepository while typing the return value as AbstractUserRepository.
+
+```python
+# src/modules/users/dependencies.py
+
+"""FastAPI dependencies for the user domain."""
+
+from typing import Annotated
+
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.infrastructure.postgres.session import get_db_session
+from src.modules.users.repository import (
+AbstractUserRepository,
+PostgresUserRepository,
+)
+from src.modules.users.service import UserService
+
+def get_user_repository(
+session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> AbstractUserRepository:
+"""Injects the concrete Postgres adapter behind the abstract contract."""
+return PostgresUserRepository(session=session)
+
+def get_user_service(
+repo: Annotated[AbstractUserRepository, Depends(get_user_repository)],
+) -> UserService:
+"""Injects the repository contract into the service layer."""
+return UserService(repo=repo)
+
+UserServiceDep = Annotated[UserService, Depends(get_user_service)]
+```
+
+### 6. Unit Testing (Speed & Isolation)
+
+Because the Service layer relies on a Repository interface rather than a hardcoded database connection, we can test complex business logic in milliseconds using in-memory fakes, completely bypassing Docker and Postgres.
+
+```python
+# tests/unit/test_user_service.py
+"""Unit tests for UserService business logic using an in-memory repository."""
+
+from uuid import UUID, uuid4
+import pytest
+
+from src.modules.users.models import User
+from src.modules.users.repository import AbstractUserRepository
+from src.modules.users.schemas import UserCreate
+from src.modules.users.service import UserService
+
+
+class FakeUserRepository(AbstractUserRepository):
+    """In-memory repository implementing the abstract contract for unit tests."""
+
+    def __init__(self) -> None:
+        self._users: dict[UUID, User] = {}
+
+    async def create(self, user: User) -> User:
+        if not user.id:
+            user.id = uuid4()
+        self._users[user.id] = user
+        return user
+
+    async def get_by_id(self, user_id: UUID) -> User | None:
+        return self._users.get(user_id)
+
+    async def get_by_email(self, email: str) -> User | None:
+        return next((u for u in self._users.values() if u.email == email), None)
+
+
+@pytest.mark.anyio
+async def test_register_user_success():
+    """Verify user registration persists to the repository."""
+    repo = FakeUserRepository()
+    service = UserService(repo=repo)
+
+    payload = UserCreate(email="test@example.com", password="secretpassword")
+    user = await service.register_user(payload)
+
+    assert user.email == "test@example.com"
+    persisted_user = await repo.get_by_email("test@example.com")
+    assert persisted_user is not None
+    assert persisted_user.id == user.id
+
+
+@pytest.mark.anyio
+async def test_register_user_duplicate_email_fails():
+    """Verify domain invariance prevents duplicate email registrations."""
+    repo = FakeUserRepository()
+    service = UserService(repo=repo)
+
+    payload = UserCreate(email="duplicate@example.com", password="secretpassword")
+    await service.register_user(payload)
+
+    with pytest.raises(ValueError, match="Email already registered"):
+        await service.register_user(payload)
+```
