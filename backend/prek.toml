@@ -40,6 +40,7 @@ rev = "1.9.4"
 id = "bandit"
 args = ["-c", "pyproject.toml"]
 additional_dependencies = ["bandit[toml]"]
+exclude = "^tests/"
 
 [[repos]]
 repo = "local"
