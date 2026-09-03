@@ -2,10 +2,9 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 
 from src.modules.users.dependencies import UserServiceDep
-from src.modules.users.exceptions import EmailAlreadyExistsError
 from src.modules.users.schemas import UserCreate, UserRead
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -18,15 +17,15 @@ async def create_user(
 ) -> UserRead:
     """
     Register a new user.
+
+    Returns a 201 Created with the user details.
+
+    Raises:
+        EmailAlreadyExistsError: If email is already registered (409 Conflict).
+        ValidationError: If email or password doesn't meet requirements (422).
     """
-    try:
-        user = await service.register_user(payload)
-
-        # Pydantic v2 method to convert the SQLAlchemy model into the outgoing schema
-        return UserRead.model_validate(user)
-
-    except EmailAlreadyExistsError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    user = await service.register_user(payload)
+    return UserRead.model_validate(user)
 
 
 @router.get("/{user_id}", response_model=UserRead)
@@ -36,10 +35,11 @@ async def get_user(
 ) -> UserRead:
     """
     Fetch a user by their UUID.
+
+    Returns 200 with user details or 404 if not found.
+
+    Raises:
+        UserNotFoundError: If user does not exist (404 Not Found).
     """
     user = await service.get_user(user_id)
-
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-
     return UserRead.model_validate(user)
