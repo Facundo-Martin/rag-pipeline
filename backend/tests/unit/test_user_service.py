@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
+from src.modules.users.exceptions import EmailAlreadyExistsError
 from src.modules.users.models import User
 from src.modules.users.repository import AbstractUserRepository
 from src.modules.users.schemas import UserCreate
@@ -46,7 +47,7 @@ async def test_register_user_success():
     repo = FakeUserRepository()
     service = UserService(repo=repo)
 
-    payload = UserCreate(email="test@example.com", password="secretpassword")
+    payload = UserCreate(email="test@example.com", password="SecurePass123")
     user = await service.register_user(payload)
 
     assert user.email == "test@example.com"
@@ -55,8 +56,9 @@ async def test_register_user_success():
     persisted_user = await repo.get_by_email("test@example.com")
     assert persisted_user is not None
     assert persisted_user.id == user.id
-    # Ensure password hashing was called (even if it's our placeholder)
-    assert persisted_user.hashed_password == "hashed_secretpassword"
+    # Ensure password was hashed (argon2 hash is different each time, so just check it's not plaintext)
+    assert persisted_user.hashed_password != "SecurePass123"
+    assert persisted_user.hashed_password.startswith("$argon2")  # argon2 hash format
 
 
 @pytest.mark.anyio
@@ -65,11 +67,11 @@ async def test_register_user_duplicate_email_fails():
     repo = FakeUserRepository()
     service = UserService(repo=repo)
 
-    payload = UserCreate(email="duplicate@example.com", password="secretpassword")
+    payload = UserCreate(email="duplicate@example.com", password="SecurePass123")
 
     # First registration succeeds
     await service.register_user(payload)
 
-    # Second registration with same email should raise ValueError
-    with pytest.raises(ValueError, match="is already registered"):
+    # Second registration with same email should raise EmailAlreadyExistsError
+    with pytest.raises(EmailAlreadyExistsError, match="is already registered"):
         await service.register_user(payload)
