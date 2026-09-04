@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, DateTime, String, func
+from sqlalchemy import Boolean, CheckConstraint, DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.infrastructure.postgres.base import Base
@@ -12,11 +12,17 @@ from src.infrastructure.postgres.base import Base
 class User(Base):
     """
     SQLAlchemy ORM model for the users table.
+    Enforces data integrity constraints at the database level.
     """
 
     # pylint: disable=too-few-public-methods
 
     __tablename__ = "users"
+    __table_args__ = (
+        CheckConstraint("email ~ '^[^@]+@[^@]+\\.[^@]+$'", name="ck_email_format"),
+        CheckConstraint("LENGTH(hashed_password) > 0", name="ck_password_not_empty"),
+        CheckConstraint("created_at <= updated_at", name="ck_timestamps_ordered"),
+    )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
