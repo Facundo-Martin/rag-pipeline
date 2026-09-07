@@ -3,6 +3,9 @@ minimum_prek_version = "0.3.0"
 default_install_hook_types = ["pre-commit", "pre-push"]
 default_stages = ["pre-commit"]
 
+# Ignore all auto-generated Alembic migration scripts
+exclude = { glob = "alembic/versions/**" }
+
 [[repos]]
 repo = "builtin"
 hooks = [
@@ -37,6 +40,7 @@ rev = "1.9.4"
 id = "bandit"
 args = ["-c", "pyproject.toml"]
 additional_dependencies = ["bandit[toml]"]
+exclude = "^tests/"
 
 [[repos]]
 repo = "local"

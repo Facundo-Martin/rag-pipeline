@@ -4,6 +4,7 @@ from typing import Any, cast
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError
 
 logger = logging.getLogger(__name__)
 
@@ -120,17 +121,77 @@ async def app_exception_handler(request: Request, exc: Exception) -> JSONRespons
 async def validation_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """
     Handler for Pydantic request validation errors.
+    Serializes errors in a clean, JSON-safe format.
     """
     # Tell Mypy to treat this as a RequestValidationError
     exc = cast(RequestValidationError, exc)
 
-    logger.info("Validation error on path=%s: %s", request.url.path, exc.errors())
+    errors = exc.errors()
+    logger.info("Validation error on path=%s: %s", request.url.path, errors)
+
+    # Clean up errors to ensure JSON serializability
+    # Remove context objects that can't be serialized
+    cleaned_errors = []
+    for error in errors:
+        clean_error = {
+            "type": error.get("type"),
+            "loc": error.get("loc"),
+            "msg": error.get("msg"),
+        }
+        cleaned_errors.append(clean_error)
+
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
             "error": {
                 "message": "Validation error",
-                "details": exc.errors(),
+                "details": cleaned_errors,
+            }
+        },
+    )
+
+
+async def integrity_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """
+    Handler for SQLAlchemy IntegrityError (database constraint violations).
+    Maps database constraint violations to appropriate HTTP status codes.
+    """
+    exc = cast(IntegrityError, exc)
+
+    # Extract constraint name from error message
+    error_message = str(exc.orig)
+    constraint_name = ""
+
+    if hasattr(exc, "constraint") and exc.constraint:
+        constraint_name = exc.constraint
+
+    # Map specific constraint violations to appropriate messages
+    if "unique" in error_message.lower() or (constraint_name and "uq" in constraint_name.lower()):
+        status_code = status.HTTP_409_CONFLICT
+        message = "Resource already exists"
+    elif "check" in error_message.lower() or (constraint_name and "ck" in constraint_name.lower()):
+        status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+        message = "Constraint validation failed"
+    elif "foreign key" in error_message.lower():
+        status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+        message = "Invalid reference to related resource"
+    else:
+        status_code = status.HTTP_400_BAD_REQUEST
+        message = "Database constraint violation"
+
+    logger.warning(
+        "Database integrity violation: path=%s constraint=%s error=%s",
+        request.url.path,
+        constraint_name,
+        error_message,
+    )
+
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "error": {
+                "message": message,
+                "details": {"constraint": constraint_name} if constraint_name else {},
             }
         },
     )
@@ -155,7 +216,13 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 def register_exception_handlers(app: FastAPI) -> None:
     """
     Register exception handlers with the FastAPI application instance.
+    Order matters: more specific exceptions should be registered before general ones.
     """
+    # Domain exceptions (most specific)
     app.add_exception_handler(AppException, app_exception_handler)
+    # Database constraint violations
+    app.add_exception_handler(IntegrityError, integrity_exception_handler)
+    # Validation errors
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    # Catch-all (least specific)
     app.add_exception_handler(Exception, unhandled_exception_handler)
