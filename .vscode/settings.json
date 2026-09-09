@@ -1,4 +1,5 @@
 {
   "python-envs.defaultEnvManager": "ms-python.python:venv",
-  "pylint.ignorePatterns": ["**/alembic/versions/**/*.py"]
+  "pylint.ignorePatterns": ["**/alembic/versions/**/*.py"],
+  "pylint.args": ["--disable=R0903"] // Ignore Pylint's "Too few public methods" (R0903)
 }
