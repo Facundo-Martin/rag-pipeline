@@ -52,6 +52,7 @@ class ArxivClient:
             raise
 
 
+# Note: Test with uv run python -m src.infrastructure.arxiv.client
 if __name__ == "__main__":
     client = ArxivClient()
     results = client.fetch_papers(query="Agentic RAG", max_results=2)
