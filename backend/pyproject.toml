@@ -9,6 +9,7 @@ dependencies = [
     "argon2-cffi>=23.1.0",
     "arxiv>=4.0.1",
     "asyncpg>=0.31.0",
+    "docling>=2.126.0",
     "fastapi[standard]>=0.141.1",
     "gunicorn>=26.2.0",
     "passlib>=1.7.4",
