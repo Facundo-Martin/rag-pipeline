@@ -36,11 +36,11 @@ RUN rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* && \
     sed -i 's|http://deb.debian.org/debian-security|http://security.debian.org/debian-security|g' /etc/apt/sources.list.d/debian.sources && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-    libgl1 \
-    libglib2.0-0 \
-    tesseract-ocr \
-    tesseract-ocr-eng \
-    curl \
+    libgl1=1.6.0-1 \
+    libglib2.0-0=2.74.6-2+deb12u9 \
+    tesseract-ocr=5.3.0-2 \
+    tesseract-ocr-eng=1:4.1.0-2 \
+    curl=7.88.1-10+deb12u15 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -54,7 +54,7 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 # 3. Create a non-root user and setup cache directories BEFORE switching users
-RUN adduser --disabled-password --gecos '' appuser && \
+RUN adduser --disabled-password --gecos '' --uid 1000 appuser && \
     mkdir -p /home/appuser/.cache/huggingface /home/appuser/.cache/docling && \
     chown -R appuser:appuser /home/appuser/.cache
 
@@ -64,7 +64,7 @@ COPY --from=builder /app /app
 # 5. Change ownership of the app directory so the appuser can execute it
 RUN chown -R appuser:appuser /app
 
-USER appuser
+USER 1000
 
 EXPOSE 8000
 
