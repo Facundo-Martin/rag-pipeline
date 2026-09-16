@@ -1,27 +1,45 @@
 FROM python:3.14-slim-bookworm
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
+# 1. Install System Dependencies for Docling/OCR (Bypass Fastly CDN with correct Security routing)
+RUN rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* && \
+    apt-get -o Acquire::http::Pipeline-Depth=0 -o Acquire::http::No-Cache=true -o Acquire::BrokenProxy=true update && \
+    apt-get -o Acquire::http::Pipeline-Depth=0 -o Acquire::http::No-Cache=true -o Acquire::BrokenProxy=true install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. Setup Environment Variables
 ENV PYTHONUNBUFFERED=1 \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PYTHON_DOWNLOADS=never \
-    PATH="/app/.venv/bin:$PATH"
+    PATH="/app/.venv/bin:$PATH" \
+    # Explicit cache directories for the non-root user
+    HF_HOME="/home/appuser/.cache/huggingface" \
+    DOCLING_HOME="/home/appuser/.cache/docling"
 
-WORKDIR /app
-
-# In dev, we don't use --no-dev so we get pytest, ruff, etc.
-COPY uv.lock pyproject.toml ./
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-install-project
-
-COPY . /app
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen
-
+# 3. Create non-root user EARLY and set up cache and app directories
 RUN adduser --disabled-password --gecos '' appuser && \
-    chown -R appuser:appuser /app
+    mkdir -p /home/appuser/.cache/huggingface /home/appuser/.cache/docling /app && \
+    chown -R appuser:appuser /home/appuser/.cache /app
 
 USER appuser
+WORKDIR /app
+
+# 4. Install dependencies
+COPY --chown=appuser:appuser uv.lock pyproject.toml ./
+RUN --mount=type=cache,target=/home/appuser/.cache/uv,uid=1000,gid=1000 \
+    uv sync --frozen --no-install-project
+
+# 5. Copy the rest of the application
+COPY --chown=appuser:appuser . /app
+RUN --mount=type=cache,target=/home/appuser/.cache/uv,uid=1000,gid=1000 \
+    uv sync --frozen
 
 EXPOSE 8000
 
