@@ -28,6 +28,10 @@ entrypoint = "src.main:app"
 line-length = 100
 extend-exclude = ["alembic/versions"]
 
+[tool.ruff.lint.per-file-ignores]
+# Ignore "unused import" (F401) in Alembic's env.py since it needs them for Base.metadata
+"alembic/env.py" = ["F401"]
+
 [dependency-groups]
 dev = [
     "httpx2>=2.10.0",

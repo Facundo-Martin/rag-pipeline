@@ -12,9 +12,8 @@ from src.config import get_settings
 
 # 2. Import Base and ALL models so Alembic can see them
 from src.infrastructure.postgres.base import Base
-
-# Explicitly import EVERY domain model so SQLAlchemy registers them to Base.metadata
-# (Even if your IDE says these are "unused imports", do not remove them!)
+from src.modules.ingestion.models import ArxivDocument  # pyright: ignore[reportUnusedImport]
+from src.modules.users.models import User  # pyright: ignore[reportUnusedImport]
 
 # This is the Alembic Config object
 config = context.config
