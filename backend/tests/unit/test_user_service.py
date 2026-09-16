@@ -21,7 +21,9 @@ class FakeUserRepository(AbstractUserRepository):
     async def create(self, user: User) -> User:
         # Simulate database assigning an ID and created_at timestamps if missing
         if not user.id:
-            user.id = uuid4()
+            user.id = 1
+        if not user.public_id:
+            user.public_id = uuid4()
 
         # Simulate PostgreSQL generating default values
         if getattr(user, "is_active", None) is None:
@@ -31,7 +33,7 @@ class FakeUserRepository(AbstractUserRepository):
         if not getattr(user, "updated_at", None):
             user.updated_at = datetime.now(UTC)
 
-        self._users[user.id] = user
+        self._users[user.public_id] = user
         return user
 
     async def get_by_email(self, email: str) -> User | None:

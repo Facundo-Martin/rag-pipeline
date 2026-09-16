@@ -1,7 +1,8 @@
 """Infrastructure client for communicating with the external ArXiv API."""
 
-import arxiv
+import arxiv  # type: ignore[import-untyped]
 import structlog
+from pydantic import HttpUrl
 
 from .schemas import ArxivPaper
 
@@ -69,6 +70,11 @@ class ArxivClient:
             papers: list[ArxivPaper] = []
 
             for p in raw_results:
+                if p.pdf_url is None:
+                    raise ArxivClientError(
+                        f"ArXiv returned no PDF URL for paper {p.get_short_id()}"
+                    )
+
                 papers.append(
                     ArxivPaper(
                         entry_id=p.get_short_id(),
@@ -76,7 +82,7 @@ class ArxivClient:
                         title=p.title.replace("\n", " "),
                         summary=p.summary.replace("\n", " "),
                         authors=[a.name for a in p.authors],
-                        pdf_url=p.pdf_url,
+                        pdf_url=HttpUrl(p.pdf_url),
                         published_date=p.published,
                         categories=p.categories,
                     )

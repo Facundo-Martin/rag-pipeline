@@ -1,9 +1,9 @@
 """Unit tests for IngestionService business logic using an in-memory repository."""
 
 from datetime import UTC, datetime
-from uuid import uuid4
 
 import pytest
+from pydantic import HttpUrl
 
 from src.infrastructure.arxiv.schemas import ArxivPaper
 from src.infrastructure.docling.schemas import ParsedDocument
@@ -21,7 +21,7 @@ class FakeArxivRepository(AbstractArxivRepository):
 
     async def create(self, document: ArxivDocument) -> ArxivDocument:
         if not document.id:
-            document.id = uuid4()
+            document.id = 1
         if not getattr(document, "created_at", None):
             document.created_at = datetime.now(UTC)
         if not getattr(document, "updated_at", None):
@@ -41,7 +41,7 @@ def sample_dtos():
         title="Test Paper",
         summary="A summary",
         authors=["Alice", "Bob"],
-        pdf_url="https://arxiv.org/pdf/2405.12345v1",
+        pdf_url=HttpUrl("https://arxiv.org/pdf/2405.12345v1"),
         published_date=datetime(2026, 1, 1, tzinfo=UTC),
         categories=["cs.AI"],
     )

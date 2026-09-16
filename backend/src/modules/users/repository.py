@@ -52,4 +52,6 @@ class SqlAlchemyUserRepository(AbstractUserRepository):
         return result.scalar_one_or_none()
 
     async def get_by_id(self, user_id: UUID) -> User | None:
-        return await self._session.get(User, user_id)
+        stmt = select(User).where(User.public_id == user_id)
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()

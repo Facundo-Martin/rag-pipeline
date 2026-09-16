@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from prefect.testing.utilities import prefect_test_harness
+from pydantic import HttpUrl
 from sqlalchemy import delete, select
 
 from src.infrastructure.arxiv.schemas import ArxivPaper
@@ -32,7 +33,7 @@ def mock_infrastructure():
         title="Integration Test Paper",
         summary="A summary for integration testing.",
         authors=["Facundo Martin"],
-        pdf_url="https://arxiv.org/pdf/9999.12345v1",
+        pdf_url=HttpUrl("https://arxiv.org/pdf/9999.12345v1"),
         published_date=datetime.now(UTC),
         categories=["cs.AI"],
     )

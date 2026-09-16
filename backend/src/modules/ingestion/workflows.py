@@ -99,6 +99,8 @@ async def load_to_database_task(paper: ArxivPaper, parsed_doc: ParsedDocument) -
             logger.error("Database insertion failed for ArXiv ID %s: %s", paper.entry_id, str(e))
             raise
 
+    raise RuntimeError("No database session available to persist document.")
+
 
 @flow(name="ArXiv ETL Pipeline", log_prints=True)
 async def run_etl_pipeline(query: str = "Agentic RAG"):

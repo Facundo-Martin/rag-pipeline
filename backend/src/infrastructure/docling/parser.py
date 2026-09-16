@@ -2,10 +2,15 @@
 
 import time
 from pathlib import Path
+from typing import cast
 
 import structlog
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.pipeline_options import PdfPipelineOptions, TableFormerMode
+from docling.datamodel.pipeline_options import (
+    PdfPipelineOptions,
+    TableFormerMode,
+    TableStructureOptions,
+)
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
 from .schemas import ParsedDocument
@@ -36,7 +41,9 @@ class DoclingGateway:
         pipeline_options = PdfPipelineOptions()
         pipeline_options.do_table_structure = True
         # ACCURATE mode prevents complex scientific tables from merging columns
-        pipeline_options.table_structure_options.mode = TableFormerMode.ACCURATE
+        cast(
+            TableStructureOptions, pipeline_options.table_structure_options
+        ).mode = TableFormerMode.ACCURATE
         pipeline_options.do_ocr = enable_ocr
 
         self.converter = DocumentConverter(
@@ -94,7 +101,7 @@ if __name__ == "__main__":
     import urllib.request
 
     # Bypass macOS standard library SSL verification for this specific test
-    ssl._create_default_https_context = ssl._create_unverified_context
+    ssl._create_default_https_context = ssl._create_unverified_context  # type: ignore[assignment]
 
     test_url = "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:

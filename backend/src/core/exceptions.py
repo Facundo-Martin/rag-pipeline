@@ -160,10 +160,8 @@ async def integrity_exception_handler(request: Request, exc: Exception) -> JSONR
 
     # Extract constraint name from error message
     error_message = str(exc.orig)
-    constraint_name = ""
-
-    if hasattr(exc, "constraint") and exc.constraint:
-        constraint_name = exc.constraint
+    constraint = getattr(exc, "constraint", None)
+    constraint_name = str(constraint) if constraint else ""
 
     # Map specific constraint violations to appropriate messages
     if "unique" in error_message.lower() or (constraint_name and "uq" in constraint_name.lower()):
