@@ -19,26 +19,23 @@ class ArxivClient:
     and strict data extraction into domain DTOs.
     """
 
-    def __init__(self, page_size: int = 100, delay_seconds: float = 3.0, num_retries: int = 3):
+    def __init__(self, delay_seconds: float = 3.0, num_retries: int = 3):
         """
-        Initializes the ArXiv client.
+        Initializes the ArXiv client configuration.
 
         Args:
-            page_size: Number of results to fetch per page.
             delay_seconds: Crucial for respecting ArXiv's rate limits (API docs mandate ~3s).
             num_retries: Automatic retries for network drops.
         """
-        self.client = arxiv.Client(
-            page_size=page_size, delay_seconds=delay_seconds, num_retries=num_retries
-        )
+        self.delay_seconds = delay_seconds
+        self.num_retries = num_retries
         logger.debug(
-            "arxiv_client_initialized",
-            page_size=page_size,
+            "arxiv_client_config_initialized",
             delay_seconds=delay_seconds,
             num_retries=num_retries,
         )
 
-    def fetch_papers(self, query: str, max_results: int = 10) -> list[ArxivPaper]:
+    def fetch_papers(self, query: str, max_results: int = 1) -> list[ArxivPaper]:
         """
         Executes a search query against ArXiv and parses the results.
 
@@ -52,16 +49,23 @@ class ArxivClient:
         Raises:
             ArxivClientError: If the API rejects the request or network fails.
         """
-        # Bind context variables for beautiful JSON indexing in production
         log = logger.bind(query=query, max_results=max_results)
         log.info("fetching_arxiv_papers_started")
+
+        # CRITICAL FIX: Instantiate the client dynamically per request.
+        # Matching page_size to max_results prevents triggering 429 limits with massive batches.
+        client = arxiv.Client(
+            page_size=max_results,
+            delay_seconds=self.delay_seconds,
+            num_retries=self.num_retries,
+        )
 
         try:
             search = arxiv.Search(
                 query=query, max_results=max_results, sort_by=arxiv.SortCriterion.SubmittedDate
             )
 
-            raw_results = list(self.client.results(search))
+            raw_results = list(client.results(search))
             papers: list[ArxivPaper] = []
 
             for p in raw_results:
@@ -94,7 +98,7 @@ class ArxivClient:
 # Note: Test with uv run python -m src.infrastructure.arxiv.client
 if __name__ == "__main__":
     # Local execution test
-    client = ArxivClient()
-    results = client.fetch_papers(query="Agentic RAG", max_results=2)
+    test_client = ArxivClient()
+    results = test_client.fetch_papers(query="Agentic RAG", max_results=2)
     for idx, paper in enumerate(results):
         print(f"{idx + 1}. {paper.title} ({paper.entry_id})")
