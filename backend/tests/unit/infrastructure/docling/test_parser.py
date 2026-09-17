@@ -1,5 +1,6 @@
 """Unit tests for the Docling infrastructure gateway."""
 
+import logging
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -31,9 +32,13 @@ def test_parse_pdf_success(mock_converter_class, tmp_path):
     assert result.elapsed_seconds >= 0.0
 
 
-def test_parse_pdf_file_not_found():
+def test_parse_pdf_file_not_found(caplog: pytest.LogCaptureFixture):
     """Ensures the gateway traps missing files before hitting the heavy ML models."""
     gateway = DoclingGateway(enable_ocr=False)
 
-    with pytest.raises(FileNotFoundError):
+    # The gateway intentionally logs the missing file; keep that expected error out of the output.
+    with (
+        caplog.at_level(logging.CRITICAL, logger="src.infrastructure.docling.parser"),
+        pytest.raises(FileNotFoundError),
+    ):
         gateway.parse_pdf(Path("/tmp/does_not_exist.pdf"))

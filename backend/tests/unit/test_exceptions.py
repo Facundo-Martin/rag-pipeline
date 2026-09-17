@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -96,8 +98,12 @@ def test_not_found_exception(client: TestClient):
     }
 
 
-def test_unhandled_exception_masking(client: TestClient):
-    response = client.get("/test-500")
+def test_unhandled_exception_masking(client: TestClient, caplog: pytest.LogCaptureFixture):
+    """Internal errors are masked in the response while the traceback is logged server-side."""
+    # The catch-all handler intentionally logs the full traceback; suppress that
+    # expected error output so it does not pollute the test run.
+    with caplog.at_level(logging.CRITICAL, logger="src.core.exceptions"):
+        response = client.get("/test-500")
     assert response.status_code == 500
     assert response.json() == {
         "error": {
