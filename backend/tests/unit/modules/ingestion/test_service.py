@@ -49,7 +49,6 @@ def sample_dtos():
     return paper, parsed
 
 
-@pytest.mark.anyio
 async def test_load_document_success(sample_dtos):
     """Verify document load persists to the repository."""
     paper, parsed = sample_dtos
@@ -67,7 +66,6 @@ async def test_load_document_success(sample_dtos):
     assert persisted_doc.id == doc.id
 
 
-@pytest.mark.anyio
 async def test_load_document_duplicate_fails(sample_dtos):
     """Verify domain invariance prevents duplicate document ingestion."""
     paper, parsed = sample_dtos

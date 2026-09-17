@@ -43,7 +43,6 @@ class FakeUserRepository(AbstractUserRepository):
         return self._users.get(user_id)
 
 
-@pytest.mark.anyio
 async def test_register_user_success():
     """Verify user registration persists to the repository."""
     repo = FakeUserRepository()
@@ -63,7 +62,6 @@ async def test_register_user_success():
     assert persisted_user.hashed_password.startswith("$argon2")  # argon2 hash format
 
 
-@pytest.mark.anyio
 async def test_register_user_duplicate_email_fails():
     """Verify domain invariance prevents duplicate email registrations."""
     repo = FakeUserRepository()

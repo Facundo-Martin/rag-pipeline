@@ -45,7 +45,6 @@ def mock_infrastructure():
     return fake_paper, fake_parsed
 
 
-@pytest.mark.anyio
 @patch("src.modules.ingestion.workflows.DoclingGateway")
 @patch("src.modules.ingestion.workflows.httpx.Client")
 @patch("src.modules.ingestion.workflows.ArxivClient")
