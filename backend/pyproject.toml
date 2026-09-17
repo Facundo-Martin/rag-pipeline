@@ -43,6 +43,9 @@ dev = [
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+log_cli = true
+log_cli_level = "INFO"
+log_format = "%(asctime)s [%(levelname)8s] %(message)s"
 
 [tool.pylint.main]
 # Ignore all auto-generated migration files
