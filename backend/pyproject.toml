@@ -45,10 +45,12 @@ dev = [
 asyncio_mode = "auto"
 # Logs are captured and only shown for failing tests (use --log-cli-level=INFO for live logs).
 log_format = "%(asctime)s [%(levelname)8s] %(message)s"
-# The 'env' block forces these variables during tests, overriding your .env file
+# The 'env' block sets these variables during tests, overriding your .env file.
+# The 'D:' flag on DATABASE_URL only applies it when the variable is not already
+# set, so CI or a shell can point tests at a different database.
 env = [
     "ENVIRONMENT=development",
-    "DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5434/app_db_test",
+    "D:DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5434/app_db_test",
 ]
 
 [tool.pylint.main]
