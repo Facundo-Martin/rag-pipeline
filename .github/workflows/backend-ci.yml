@@ -51,6 +51,11 @@ jobs:
       - name: Run Ruff (Lint Check)
         run: uv run ruff check .
 
+      - name: Run Database Migrations
+        run: uv run alembic upgrade head
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/app_db
+
       - name: Run Pytest
         run: uv run pytest -v
 
