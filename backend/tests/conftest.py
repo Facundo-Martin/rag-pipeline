@@ -1,7 +1,5 @@
 """Shared pytest fixtures for database-backed tests."""
 
-# pylint: disable=unused-import
-
 from collections.abc import AsyncGenerator
 
 import pytest_asyncio
@@ -10,15 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.pool import NullPool
 
 from src.config import settings
-from src.infrastructure.postgres.base import Base
+from src.infrastructure.postgres.models import Base
 from src.infrastructure.postgres.session import get_db_session
 from src.main import app
-
-# Import model modules so their tables register on Base.metadata before create_all().
-from src.modules.ingestion.models import (
-    ArxivDocument,  # noqa: F401
-)
-from src.modules.users.models import User  # noqa: F401
 
 # Setup the Engine using the Pydantic setting (which is now forced to port 5434).
 # NullPool avoids reusing connections across the per-test event loops pytest-asyncio creates.
