@@ -141,7 +141,7 @@ async def validation_exception_handler(request: Request, exc: Exception) -> JSON
         cleaned_errors.append(clean_error)
 
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         content={
             "error": {
                 "message": "Validation error",
@@ -168,10 +168,10 @@ async def integrity_exception_handler(request: Request, exc: Exception) -> JSONR
         status_code = status.HTTP_409_CONFLICT
         message = "Resource already exists"
     elif "check" in error_message.lower() or (constraint_name and "ck" in constraint_name.lower()):
-        status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+        status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
         message = "Constraint validation failed"
     elif "foreign key" in error_message.lower():
-        status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+        status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
         message = "Invalid reference to related resource"
     else:
         status_code = status.HTTP_400_BAD_REQUEST
