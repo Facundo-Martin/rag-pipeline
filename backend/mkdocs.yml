@@ -1,0 +1,29 @@
+site_name: RAG Pipeline Architecture
+site_description: Documentation for the ETL pipelines and backend services
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: blue
+plugins:
+  - search
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+nav:
+  - Home: index.md
+  - Architecture Decision Records:
+      - "001: Modular Monolith": adr/001-modular-monolith-design.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Ingestion Pipeline: architecture/ingestion-pipeline.md
+  - Guides:
+      - Local Development: guides/local-development.md
