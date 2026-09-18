@@ -1,85 +1,13 @@
-# ==============================================================================
-# GLOBAL SETTINGS
-# ==============================================================================
 set dotenv-load := true
 set shell := ["bash", "-c"]
 
 default:
     @just --list
 
-# ==============================================================================
-# DOCKER & INFRASTRUCTURE
-# ==============================================================================
-# Start all containers in development mode
-dev:
-    docker compose -f docker/docker-compose.yml up --build
-
-# Start containers in background (detached)
-dev-d:
-    docker compose -f docker/docker-compose.yml up -d
-
-# Stop all running containers
-down:
-    docker compose -f docker/docker-compose.yml down
-
-# Rebuild dev containers from scratch
-build:
-    docker compose -f docker/docker-compose.yml up --build
-
-# Build production Docker image locally
-build-prod:
-    docker build -f docker/Dockerfile -t backend-app:prod .
-
-# Test production image locally with running infrastructure
-test-prod:
-    @echo "Starting infrastructure in background..."
-    docker compose -f docker/docker-compose.yml up -d db redis qdrant
-    @echo "Running production container..."
-    docker run --rm -it --network docker_default -p 8000:8000 -e ENVIRONMENT=production -e DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/app_db backend-app:prod
-
-# View container logs
-logs:
-    docker compose -f docker/docker-compose.yml logs -f app
-
-# ==============================================================================
-# DATABASE (ALEMBIC)
-# ==============================================================================
-# Generate a new migration script
-db-migrate message:
-    uv run alembic -c pyproject.toml revision --autogenerate -m "{{message}}"
-
-# Apply all pending migrations
-db-upgrade:
-    uv run alembic -c pyproject.toml upgrade head
-
-# ==============================================================================
-# QUALITY ASSURANCE
-# ==============================================================================
-# Run the test suite
-test:
-    uv run pytest -v
-
-# Lint the codebase
-lint:
-    uv run ruff check .
-
-# Format the codebase
-format:
-    uv run ruff check --fix .
-    uv run ruff format .
-
-# Lint Dockerfiles
-lint-docker:
-    docker run --rm -v "{{invocation_directory()}}:/work" -w /work hadolint/hadolint hadolint docker/Dockerfile.dev docker/Dockerfile
-
-# ==============================================================================
-# DOCUMENTATION & UTILITIES
-# ==============================================================================
-# Generate architecture diagrams
-diagrams:
-    @echo "Generating architecture diagrams..."
-    @for file in docs/_diagrams/*.py; do uv run python "$$file"; done
-    @echo "Diagrams generated successfully!"
+import "just/docker.justfile"
+import "just/db.justfile"
+import "just/qa.justfile"
+import "just/docs.justfile"
 
 # Clean up temp files
 clean:
