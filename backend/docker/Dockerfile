@@ -30,10 +30,13 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # ==========================================
 FROM python:3.14-slim-bookworm
 
-# 1. Install System Dependencies for Docling/OCR (Bypass Fastly CDN with correct Security routing)
+# 1. Install System Dependencies for Docling/OCR.
+# Bypass the Fastly CDN (deb.debian.org) by routing to a mirror, but rewrite the
+# security repo FIRST: the general pattern is a prefix of the -security URL, so
+# doing it second would misroute bookworm-security to ftp.us.debian.org (404).
 RUN rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* && \
-    sed -i 's|http://deb.debian.org/debian|http://ftp.us.debian.org/debian|g' /etc/apt/sources.list.d/debian.sources && \
     sed -i 's|http://deb.debian.org/debian-security|http://security.debian.org/debian-security|g' /etc/apt/sources.list.d/debian.sources && \
+    sed -i 's|http://deb.debian.org/debian|http://ftp.us.debian.org/debian|g' /etc/apt/sources.list.d/debian.sources && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
     libgl1=1.6.0-1 \
