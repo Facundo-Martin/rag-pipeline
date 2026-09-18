@@ -61,3 +61,12 @@ entry = "uv run pytest"
 language = "system"
 pass_filenames = false
 stages = ["pre-push", "manual"]
+
+[[repos.hooks]]
+id = "generate-diagrams"
+name = "Generate Architecture Diagrams"
+entry = "make diagrams"
+language = "system"
+files = '^docs/_diagrams/.*\.py$'
+pass_filenames = false
+stages = ["pre-commit", "manual"]

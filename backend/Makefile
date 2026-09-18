@@ -1,4 +1,4 @@
-.PHONY: dev dev-d down db-migrate db-upgrade build build-prod test lint format lint-docker logs clean
+.PHONY: dev dev-d down db-migrate db-upgrade build build-prod test lint format lint-docker logs clean diagrams
 
 # Start all containers in development mode
 dev:
@@ -56,6 +56,13 @@ lint:
 format:
 	uv run ruff check --fix .
 	uv run ruff format .
+
+diagrams:
+	@echo "Generating architecture diagrams..."
+	@for file in docs/_diagrams/*.py; do \
+		uv run python "$$file"; \
+	done
+	@echo "Diagrams generated successfully!"
 
 
 
