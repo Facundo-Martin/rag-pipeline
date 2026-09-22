@@ -3,9 +3,12 @@ set working-directory := ".."
 default:
     @just --list docker
 
-# Start all containers in development mode
+# Start all containers in development mode AND serve documentation
 dev:
-    docker compose -f docker/docker-compose.yml up --build
+    @echo "Starting Docker infrastructure in the background..."
+    docker compose -f docker/docker-compose.yml up --build -d
+    @echo "Starting MkDocs documentation server..."
+    uv run mkdocs serve || uv run mkdocs serve -a localhost:8001 || uv run mkdocs serve -a localhost:8002
 
 # Start containers in background (detached)
 dev-d:
