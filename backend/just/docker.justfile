@@ -1,4 +1,5 @@
 set working-directory := ".."
+export COMPOSE_BAKE := "true"
 
 default:
     @just --list docker
