@@ -1,3 +1,6 @@
+default:
+    @just --list qa
+
 # Run the test suite
 test:
     uv run pytest -v
@@ -12,5 +15,5 @@ format:
     uv run ruff format .
 
 # Lint Dockerfiles
-lint-docker:
+docker:
     docker run --rm -v "{{invocation_directory()}}:/work" -w /work hadolint/hadolint hadolint docker/Dockerfile.dev docker/Dockerfile

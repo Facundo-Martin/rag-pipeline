@@ -4,10 +4,17 @@ set shell := ["bash", "-c"]
 default:
     @just --list
 
-import "just/docker.justfile"
-import "just/db.justfile"
-import "just/qa.justfile"
-import "just/docs.justfile"
+# Database migrations and management
+mod db "just/db.justfile"
+
+# Container orchestration and building
+mod docker "just/docker.justfile"
+
+# Documentation and diagram generation
+mod docs "just/docs.justfile"
+
+# Testing, linting, and formatting
+mod qa "just/qa.justfile"
 
 # Clean up temp files
 clean:

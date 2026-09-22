@@ -1,7 +1,10 @@
+default:
+    @just --list db
+
 # Generate a new migration script
-db-migrate message:
+migrate message:
     uv run alembic -c pyproject.toml revision --autogenerate -m "{{message}}"
 
 # Apply all pending migrations
-db-upgrade:
+upgrade:
     uv run alembic -c pyproject.toml upgrade head

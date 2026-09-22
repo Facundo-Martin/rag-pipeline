@@ -1,3 +1,6 @@
+default:
+    @just --list docker
+
 # Start all containers in development mode
 dev:
     docker compose -f docker/docker-compose.yml up --build

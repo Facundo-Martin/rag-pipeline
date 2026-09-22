@@ -1,3 +1,6 @@
+default:
+    @just --list docs
+
 # Generate architecture diagrams
 diagrams:
     @echo "Generating architecture diagrams..."
