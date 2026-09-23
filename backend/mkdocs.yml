@@ -2,15 +2,15 @@ site_name: RAG Pipeline Architecture
 site_description: Documentation for the ETL pipelines and backend services
 theme:
   name: material
-  features:
-    - navigation.tabs
-    - navigation.sections
-    - content.code.copy
+  logo: assets/your-logo.png # Add a slick logo
+  font:
+    text: Inter # Modern, clean sans-serif font
+    code: Fira Code # Beautiful code font
   palette:
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: indigo
-      accent: blue
+      primary: black # Stealthy, modern dark mode
+      accent: deep purple
 plugins:
   - search
 markdown_extensions:
@@ -20,10 +20,15 @@ markdown_extensions:
   - pymdownx.superfences
 nav:
   - Home: index.md
-  - Architecture Decision Records:
-      - "001: Modular Monolith": adr/001-modular-monolith-design.md
-  - Architecture:
-      - Overview: architecture/overview.md
-      - Ingestion Pipeline: architecture/ingestion-pipeline.md
   - Guides:
-      - Local Development: guides/local-development.md
+      - Getting Started: guides/getting-started.md
+      - Writing Modules: guides/writing-modules.md
+      - Tooling & Scripts: guides/tooling-and-scripts.md
+  - Core Concepts:
+      - System Architecture: core_concepts/system-architecture.md
+      - Tooling Philosophy: core_concepts/tooling-philosophy.md
+  - Modules:
+      - Ingestion:
+          - Architecture: modules/ingestion/architecture.md
+          - Tutorial: modules/ingestion/tutorial.md
+          - Reference: modules/ingestion/reference.md
