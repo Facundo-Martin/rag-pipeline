@@ -1,0 +1,7 @@
+nav:
+  - index.md
+  - Quickstart: quickstart
+  - Concepts: concepts
+  - Guides: guides
+  - Tutorials: tutorials
+  - Reference: reference

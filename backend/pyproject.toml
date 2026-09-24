@@ -7,10 +7,16 @@ requires-python = ">=3.14"
 dependencies = [
     "alembic>=1.19.1",
     "argon2-cffi>=23.1.0",
+    "arxiv>=4.0.1",
     "asyncpg>=0.31.0",
+    "diagrams>=0.25.1",
+    "docling>=2.126.0",
     "fastapi[standard]>=0.141.1",
     "gunicorn>=26.2.0",
-    "passlib>=1.7.4",
+    "mkdocs<2.0.0",
+    "mkdocs-awesome-pages-plugin>=2.10.1",
+    "mkdocs-material>=9.7.7",
+    "prefect>=3.8.5",
     "pydantic>=2.13.4",
     "pydantic-settings>=2.15.0",
     "sqlalchemy[asyncio]>=2.0.52",
@@ -25,17 +31,31 @@ entrypoint = "src.main:app"
 line-length = 100
 extend-exclude = ["alembic/versions"]
 
+[tool.ruff.lint.per-file-ignores]
+# Ignore "unused import" (F401) in Alembic's env.py since it needs them for Base.metadata
+"alembic/env.py" = ["F401"]
+
 [dependency-groups]
 dev = [
     "httpx2>=2.10.0",
     "mypy>=2.3.1",
     "pytest>=9.1.1",
     "pytest-asyncio>=0.25.3",
+    "pytest-env>=1.7.1",
     "ruff>=0.16.3",
 ]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# Logs are captured and only shown for failing tests (use --log-cli-level=INFO for live logs).
+log_format = "%(asctime)s [%(levelname)8s] %(message)s"
+# The 'env' block sets these variables during tests, overriding your .env file.
+# The 'D:' flag on DATABASE_URL only applies it when the variable is not already
+# set, so CI or a shell can point tests at a different database.
+env = [
+    "ENVIRONMENT=development",
+    "D:DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5434/app_db_test",
+]
 
 [tool.pylint.main]
 # Ignore all auto-generated migration files

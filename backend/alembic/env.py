@@ -1,3 +1,5 @@
+"""Alembic migration environment for the async SQLAlchemy engine."""
+
 # pylint: disable=no-member,import-error,invalid-name
 import asyncio
 import logging
@@ -10,8 +12,8 @@ from alembic import context
 # 1. Import your app settings
 from src.config import get_settings
 
-# 2. Import Base and ALL models so Alembic can see them
-from src.infrastructure.postgres.base import Base
+# 2. Import the model registry; importing it registers every slice's tables on Base.metadata
+from src.infrastructure.postgres.models import Base
 
 # This is the Alembic Config object
 config = context.config

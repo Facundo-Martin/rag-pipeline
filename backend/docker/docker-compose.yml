@@ -1,8 +1,15 @@
 services:
+  # ==========================================
+  # 1. APPLICATION DOMAIN
+  # ==========================================
   app:
     build:
       context: ..
       dockerfile: docker/Dockerfile.dev
+    # Automatically run migrations before starting the API
+    command: >
+      sh -c "alembic upgrade head &&
+      uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload"
     ports:
       - "8000:8000"
     volumes:
@@ -12,20 +19,61 @@ services:
       - ENVIRONMENT=development
       - DEBUG=true
       - APP_NAME=Modular FastAPI Backend
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/app_db
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db-app:5432/app_db
       - REDIS_URL=redis://redis:6379/0
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
+      # Tells FastAPI where to send Prefect flow runs
+      - PREFECT_API_URL=http://prefect-server:4200/api
     depends_on:
-      db:
+      db-app:
         condition: service_healthy
       redis:
         condition: service_started
       qdrant:
         condition: service_started
-    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
 
-  db:
+  # ==========================================
+  # 2. ORCHESTRATION LAYER (Prefect 3)
+  # ==========================================
+  prefect-server:
+    image: prefecthq/prefect:3-latest
+    command: prefect server start --host 0.0.0.0
+    environment:
+      - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://postgres:postgres@db-prefect:5432/prefect_db
+      - PREFECT_SERVER_API_HOST=0.0.0.0
+    ports:
+      - "4200:4200" # Prefect UI
+    depends_on:
+      db-prefect:
+        condition: service_healthy
+
+  prefect-worker:
+    # Builds from the exact same Dockerfile as the API so it has Docling, ArXiv, etc.
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+    command: >
+      sh -c "prefect work-pool create arxiv-pool --type process || true
+      && prefect worker start --pool arxiv-pool"
+    volumes:
+      - ../src:/app/src
+      # CRITICAL: Persists gigabytes of downloaded PyTorch models between restarts
+      - docling_model_cache:/root/.cache/docling/models
+      - huggingface_cache:/root/.cache/huggingface
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db-app:5432/app_db
+      - QDRANT_URL=http://qdrant:6333
+      - PREFECT_API_URL=http://prefect-server:4200/api
+    depends_on:
+      app:
+        condition: service_started
+
+  # ==========================================
+  # 3. STORAGE & INFRASTRUCTURE
+  # ==========================================
+  db-app:
     image: postgres:16-alpine
     restart: always
     environment:
@@ -35,9 +83,42 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_app_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      # Fixed: Now checks that the specific database is ready, not just the server
+      test: ["CMD-SHELL", "pg_isready -U postgres -d app_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-test:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: app_db_test
+    ports:
+      - "5434:5432" # Mapped to 5434 to avoid collision with db-app
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d app_db_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-prefect:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: prefect_db
+    ports:
+      - "5433:5432" # Mapped to 5433 locally to avoid collision with db-app
+    volumes:
+      - postgres_prefect_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d prefect_db"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -51,7 +132,7 @@ services:
       - redis_data:/data
 
   qdrant:
-    image: qdrant/qdrant:v1.9.0
+    image: qdrant/qdrant:latest # Upgraded from v1.9.0
     restart: always
     ports:
       - "6333:6333"
@@ -59,7 +140,13 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
 
+# ==========================================
+# 4. PERSISTENT VOLUMES
+# ==========================================
 volumes:
-  postgres_data:
+  postgres_app_data:
+  postgres_prefect_data:
   redis_data:
   qdrant_data:
+  docling_model_cache:
+  huggingface_cache:

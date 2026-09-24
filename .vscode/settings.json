@@ -1,4 +1,17 @@
 {
   "python-envs.defaultEnvManager": "ms-python.python:venv",
-  "pylint.ignorePatterns": ["**/alembic/versions/**/*.py"]
+
+  // Python Path Resolution (tells Pylance/Intellisense where the code is)
+  "python.analysis.extraPaths": ["${workspaceFolder}/backend"],
+
+  // Pylint Execution Path (tells Pylint to run from inside the backend folder)
+  "pylint.cwd": "${workspaceFolder}/backend",
+
+  // Shared Linting Rules
+  "pylint.ignorePatterns": [
+    "**/alembic/versions/**/*.py" // Ignores auto-generated database migration scripts
+  ],
+  "pylint.args": [
+    "--disable=R0903" // Ignores "Too few public methods" for single-purpose infrastructure classes
+  ]
 }

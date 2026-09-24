@@ -3,7 +3,7 @@
 from uuid import UUID
 
 import structlog
-from passlib.context import CryptContext
+from argon2 import PasswordHasher
 
 from src.modules.users.exceptions import EmailAlreadyExistsError, UserNotFoundError
 from src.modules.users.models import User
@@ -12,8 +12,8 @@ from src.modules.users.schemas import UserCreate
 
 logger = structlog.get_logger(__name__)
 
-# Configure password hashing with argon2
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+# Argon2id password hasher (argon2-cffi defaults)
+PASSWORD_HASHER = PasswordHasher()
 
 
 class UserService:
@@ -76,5 +76,5 @@ class UserService:
 
     @staticmethod
     def _hash_password(password: str) -> str:
-        """Securely hashes a plaintext password using bcrypt."""
-        return pwd_context.hash(password)
+        """Securely hashes a plaintext password using Argon2id."""
+        return PASSWORD_HASHER.hash(password)

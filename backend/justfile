@@ -1,0 +1,22 @@
+set dotenv-load := true
+set shell := ["bash", "-c"]
+
+default:
+    @just --list
+
+# Database migrations and management
+mod db "just/db.justfile"
+
+# Container orchestration and building
+mod docker "just/docker.justfile"
+
+# Documentation and diagram generation
+mod docs "just/docs.justfile"
+
+# Testing, linting, and formatting
+mod qa "just/qa.justfile"
+
+# Clean up temp files
+clean:
+    find . -type d -name "__pycache__" -exec rm -rf {} +
+    find . -type d -name ".pytest_cache" -exec rm -rf {} +

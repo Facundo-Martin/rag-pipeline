@@ -17,7 +17,6 @@ def override_user_repository():
     app.dependency_overrides.clear()
 
 
-@pytest.mark.anyio
 @pytest.mark.usefixtures("override_user_repository")
 async def test_create_user_e2e():
     """Test the API Router and Service layer without hitting Postgres."""
@@ -34,7 +33,6 @@ async def test_create_user_e2e():
         assert data["is_active"] is True
 
 
-@pytest.mark.anyio
 @pytest.mark.usefixtures("override_user_repository")
 async def test_create_user_duplicate_email_returns_409():
     """Test that duplicate emails return 409 Conflict with proper error message."""
@@ -58,7 +56,6 @@ async def test_create_user_duplicate_email_returns_409():
         assert "already registered" in data["error"]["message"]
 
 
-@pytest.mark.anyio
 @pytest.mark.usefixtures("override_user_repository")
 async def test_create_user_weak_password_returns_422():
     """Test that weak passwords are rejected during validation."""
@@ -74,7 +71,6 @@ async def test_create_user_weak_password_returns_422():
         assert "error" in data
 
 
-@pytest.mark.anyio
 @pytest.mark.usefixtures("override_user_repository")
 async def test_get_user_not_found_returns_404():
     """Test that fetching a non-existent user returns 404."""

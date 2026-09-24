@@ -36,7 +36,9 @@ class UserRead(BaseModel):
     # directly from your SQLAlchemy ORM model instances.
     model_config = ConfigDict(from_attributes=True)
 
-    id: UUID
+    # Expose the public UUID (public_id) to clients; the integer `id`
+    # is an internal surrogate key only.
+    id: UUID = Field(validation_alias="public_id")
     email: EmailStr
     is_active: bool
     created_at: datetime
