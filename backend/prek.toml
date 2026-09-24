@@ -65,7 +65,7 @@ stages = ["pre-push", "manual"]
 [[repos.hooks]]
 id = "generate-diagrams"
 name = "Generate Architecture Diagrams"
-entry = "make diagrams"
+entry = "just docs::diagrams"
 language = "system"
 files = '^docs/_diagrams/.*\.py$'
 pass_filenames = false
