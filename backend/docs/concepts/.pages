@@ -1,0 +1,5 @@
+nav:
+  - system-architecture.md
+  - ingestion-architecture.md
+  - tooling-philosophy.md
+  - ...

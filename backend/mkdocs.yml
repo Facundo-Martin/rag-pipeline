@@ -2,33 +2,35 @@ site_name: RAG Pipeline Architecture
 site_description: Documentation for the ETL pipelines and backend services
 theme:
   name: material
-  logo: assets/your-logo.png # Add a slick logo
+  logo: assets/your-logo.png
   font:
-    text: Inter # Modern, clean sans-serif font
-    code: Fira Code # Beautiful code font
+    text: Inter
+    code: Fira Code
   palette:
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: black # Stealthy, modern dark mode
+      primary: black
       accent: deep purple
+  features:
+    - navigation.indexes # Allows folder-level index.md files
+    - navigation.sections # Renders top-level folders as flat headers, removing toggles
+    - search.highlight
+    - search.share
+    - content.code.copy
+
 plugins:
   - search
+  - awesome-pages # Automatically generates the nav from the file system
+
 markdown_extensions:
   - admonition
+  - attr_list
+  - def_list
+  - pymdownx.details
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.superfences
-nav:
-  - Home: index.md
-  - Guides:
-      - Getting Started: guides/getting-started.md
-      - Writing Modules: guides/writing-modules.md
-      - Tooling & Scripts: guides/tooling-and-scripts.md
-  - Core Concepts:
-      - System Architecture: core_concepts/system-architecture.md
-      - Tooling Philosophy: core_concepts/tooling-philosophy.md
-  - Modules:
-      - Ingestion:
-          - Architecture: modules/ingestion/architecture.md
-          - Tutorial: modules/ingestion/tutorial.md
-          - Reference: modules/ingestion/reference.md
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
